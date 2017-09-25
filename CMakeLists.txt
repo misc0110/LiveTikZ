@@ -1,4 +1,5 @@
 project(livetikz)
+cmake_minimum_required(VERSION 3.5)
 
 FIND_PACKAGE(KDE4 REQUIRED)
 INCLUDE_DIRECTORIES( ${KDE4_INCLUDES} /usr/include/poppler/qt4/ . )
