@@ -42,6 +42,9 @@ public slots:
   void renderFinished(int code);
   void showCompilerSelection();
   void updateLog();
+  void gotoPreviousImage();
+  void gotoNextImage();
+  
 
 private:
   void setupActions();
@@ -82,6 +85,11 @@ private:
   
   QProcess *renderProcess;
   QString renderOutput;
+  
+  QAction* nextImage;
+  QAction* prevImage;
+  
+  int currentPage;
 };
 
 #endif

@@ -10,6 +10,7 @@
 #include <kstandardaction.h>
 #include <kstatusbar.h>
 #include <kurl.h>
+#include <ktoolbar.h>
 
 #include <QApplication>
 #include <iostream>
@@ -32,9 +33,32 @@ void MainWindow::textRemoved(KTextEditor::Document *document, const KTextEditor:
 
 void MainWindow::render() { render(display->getScale()); }
 
+void MainWindow::gotoNextImage() {
+  if(currentDoc && currentPage < currentDoc->numPages()) {
+    currentPage++;
+    render();
+  }
+}
+
+void MainWindow::gotoPreviousImage() {
+  if(currentPage > 0) {
+    currentPage--;
+    render();
+  }
+}
+
 void MainWindow::render(double scale) {
   if (currentDoc && display) {
-    QImage image = currentDoc->page(0)->renderToImage(scale * physicalDpiX(), scale * physicalDpiY());
+    if(currentPage >= currentDoc->numPages()) {
+        currentPage = currentDoc->numPages() - 1;
+    }
+    if(currentPage < 0) {
+        currentPage = 0;
+    }
+    prevImage->setVisible(currentDoc->numPages() > 1);
+    nextImage->setVisible(currentDoc->numPages() > 1);
+    
+    QImage image = currentDoc->page(currentPage)->renderToImage(scale * physicalDpiX(), scale * physicalDpiY());
     display->setImage(image);
   }
 }
@@ -149,7 +173,7 @@ void MainWindow::renderFinished(int code) {
   renderProcess = NULL;
 }
 
-MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL) {
+MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0) {
   QCoreApplication::setOrganizationName("misc0110");
   QCoreApplication::setOrganizationDomain("misc0110.net");
   QCoreApplication::setApplicationName("livetikz");
@@ -174,6 +198,9 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL) {
 
   connect(display, SIGNAL(zoomChanged(double)), this, SLOT(render(double)));
   connect(browseButton, SIGNAL(clicked()), SLOT(browse()));
+  
+  connect(prevImage, SIGNAL(triggered()), this, SLOT(gotoPreviousImage()));
+  connect(nextImage, SIGNAL(triggered()), this, SLOT(gotoNextImage()));
 
   connect((QObject *)doc, SIGNAL(textInserted(KTextEditor::Document *, KTextEditor::Range)), this,
           SLOT(textInserted(KTextEditor::Document *, KTextEditor::Range)));
@@ -251,6 +278,12 @@ void MainWindow::setupUI() {
   setCentralWidget(window);
   setupGUI(ToolBar | Keys | StatusBar | Save);
   createGUI(katePart);
+  
+  toolBar()->addSeparator();
+  prevImage = toolBar()->addAction(QIcon::fromTheme("go-previous"), "Previous image");
+  nextImage = toolBar()->addAction(QIcon::fromTheme("go-next"), "Next image");
+  prevImage->setVisible(false);
+  nextImage->setVisible(false);
 
   QDesktopWidget widget;
   QRect mainScreenSize = widget.availableGeometry(widget.primaryScreen());
