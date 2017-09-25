@@ -16,5 +16,5 @@ target_link_libraries(livetikz ${KDE4_KDEUI_LIBS} ${KDE4_KPARTS_LIBS} poppler-qt
 
 ########### install files ###############
 install(TARGETS livetikz DESTINATION ${BIN_INSTALL_DIR} )
-install( FILES livetikzui.rc 
+install(FILES  
     DESTINATION  ${DATA_INSTALL_DIR}/livetikz ) 
