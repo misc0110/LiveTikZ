@@ -1,27 +1,41 @@
+#include <QApplication>
+#include <QCommandLineParser>
+
 #include <KAboutData>
-#include <KApplication>
-#include <KCmdLineArgs>
-#include <KUrl>
+#include <KLocalizedString>
 
 #include "mainwindow.h"
 
 int main(int argc, char *argv[]) {
-  KAboutData aboutData("livetikz", "livetikz", ki18n("livetikz"), "0.1", ki18n("A tikz editor with live preview."),
-                       KAboutData::License_GPL, ki18n("Copyright (c) 2017 Michael Schwarz"));
-  KCmdLineArgs::init(argc, argv, &aboutData);
+  QApplication app(argc, argv);
+  KLocalizedString::setApplicationDomain("livetikz");
 
-  KCmdLineOptions options;
-  options.add("+[file]", ki18n("Document to open"));
-  KCmdLineArgs::addCmdLineOptions(options);
+  KAboutData aboutData(
+    QStringLiteral("livetikz"),
+    i18n("A tikz editor with live preview."),
+    QStringLiteral("0.1"),
+    i18n("A simple text area"),
+    KAboutLicense::GPL,
+    i18n("(c) 2017 Michael Schwarz"),
+    "",
+    "misc0110.net"
+    );
 
-  KApplication app;
+  QCommandLineParser parser;
+  parser.setApplicationDescription(QCoreApplication::translate("main", "A tikz editor with live preview."));
+  parser.addHelpOption();
+  parser.addVersionOption();
+  parser.addPositionalArgument("file", QCoreApplication::translate("main", "Document to open."));
+  aboutData.setupCommandLine(&parser);
+  parser.process(app);
+  aboutData.processCommandLine(&parser);
 
   MainWindow *window = new MainWindow();
   window->show();
 
-  KCmdLineArgs *args = KCmdLineArgs::parsedArgs();
-  if (args->count()) {
-    window->load(args->url(0).url());
+  const QStringList args = parser.positionalArguments();
+  if (args.count()) {
+    window->load(QUrl::fromLocalFile(args.at(0)));
   }
 
   return app.exec();

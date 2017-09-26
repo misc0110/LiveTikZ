@@ -1,7 +1,7 @@
 #ifndef LIVETIKZ_H
 #define LIVETIKZ_H
 
-#include <KMenuBar>
+#include <QMenuBar>
 #include <QDesktopWidget>
 #include <QFileDialog>
 #include <QScrollBar>
@@ -16,13 +16,14 @@
 #include <QSettings>
 #include <QSplitter>
 #include <QTemporaryFile>
+#include <QTemporaryDir>
 #include <QTextEdit>
 #include <QTextCursor>
 #include <QTimer>
-#include <kparts/mainwindow.h>
-#include <ktexteditor/document.h>
-#include <ktexteditor/view.h>
-#include <poppler-qt4.h>
+#include <KParts/MainWindow>
+#include <KTextEditor/Document>
+#include <KTextEditor/View>
+#include <poppler-qt5.h>
 #include <ZoomScrollImage.h>
 
 class MainWindow : public KParts::MainWindow {
@@ -32,7 +33,7 @@ public:
   virtual ~MainWindow();
 
 public slots:
-  void load(const KUrl &url);
+  void load(const QUrl &url);
   void load();
   void textInserted(KTextEditor::Document *document, const KTextEditor::Range &range);
   void textRemoved(KTextEditor::Document *document, const KTextEditor::Range &range);
@@ -53,7 +54,7 @@ private:
   void setupEditor();
 
   void render();
-  void compile(QTemporaryFile &file);
+  void compile();
   
   void appendLog(QString str);
 
@@ -70,6 +71,7 @@ private:
   KTextEditor::View *view;
   KTextEditor::Document *doc;
   ZoomScrollImage *display;
+  QTemporaryDir* dir;
   Poppler::Document *currentDoc;
 
   QTimer *refreshTimer;
@@ -77,7 +79,7 @@ private:
 
   QTextEdit *log;
 
-  KUrl templateFile;
+  QUrl templateFile;
   QLineEdit *templateLabel;
   QPushButton *browseButton;
 
