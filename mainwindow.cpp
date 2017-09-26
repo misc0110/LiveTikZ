@@ -96,7 +96,7 @@ void MainWindow::refresh() {
     if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
       QTextStream out(&file);
 
-      QFile inputFile(templateFile.fileName());
+      QFile inputFile(templateFile.url(QUrl::PreferLocalFile));
       if (inputFile.exists() && inputFile.open(QIODevice::ReadOnly)) {
         QTextStream in(&inputFile);
         while (!in.atEnd()) {
@@ -198,7 +198,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
 
   templateFile = QUrl(settings.value("template", "").toString());
   // if (templateFile != "") {
-  templateLabel->setText(templateFile.fileName());
+  templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
   // }
 
   doc->setHighlightingMode("Latex");
@@ -326,11 +326,12 @@ void MainWindow::setupEditor() {
 void MainWindow::load() { load(QFileDialog::getOpenFileUrl()); }
 
 void MainWindow::browse() {
-  QUrl newTemplateFile = QFileDialog::getOpenFileUrl();
+  QUrl newTemplateFile = QFileDialog::getOpenFileUrl(this, QString("Open template"));
   if (newTemplateFile.fileName() != "") {
     templateFile = newTemplateFile;
-    templateLabel->setText(templateFile.fileName());
+    templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
     QSettings settings;
-    settings.setValue("template", templateFile.fileName());
+    settings.setValue("template", templateFile.url(QUrl::PreferLocalFile));
+    refresh();
   }
 }

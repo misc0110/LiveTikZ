@@ -1,0 +1,16 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{color}
+\usepackage{amssymb}
+\usepackage{pgfplots}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{arrows}
+\usetikzlibrary{patterns}
+\usetikzlibrary{positioning}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{shapes.arrows}
+\usetikzlibrary{pgfplots.groupplots}
+\pgfplotsset{compat=1.13}
+\begin{document}
+<>
+\end{document}
