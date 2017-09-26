@@ -55,3 +55,4 @@ sudo make install
 # Screenshots
 
 ![LiveTikZ 0.1](https://raw.github.com/misc0110/LiveTikZ/master/screenshots/livetikz_0.1.png)
+![LiveTikZ 0.1 - Beamer support](https://raw.github.com/misc0110/LiveTikZ/master/screenshots/livetikz_0.1_multi.png)
