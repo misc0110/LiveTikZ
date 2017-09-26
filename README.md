@@ -28,12 +28,12 @@ The following packages are required to compile from source:
 
 * build-essential
 * cmake
-* libqt4-dev
-* qt4-dev-tools
-* libpoppler-qt4-dev
-* kdelibs5-dev
+* extra-cmake-modules
+* qt5-default
 * libkf5parts-dev
 * libkf5texteditor-dev
+* libpoppler-qt5-dev
+* kdelibs5-dev
 
 ## Compile
 
