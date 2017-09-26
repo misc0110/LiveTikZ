@@ -18,15 +18,9 @@
 #undef QT_NO_DEBUG
 #include <kdebug.h>
 
-void MainWindow::textInserted(KTextEditor::Document *document, const KTextEditor::Range &range) {
-  (void)document;
-  (void)range;
-  refreshTimer->start(1000);
-}
 
-void MainWindow::textRemoved(KTextEditor::Document *document, const KTextEditor::Range &range) {
+void MainWindow::textChanged(KTextEditor::Document *document) {
   (void)document;
-  (void)range;
   refreshTimer->start(1000);
 }
 
@@ -197,9 +191,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   setupUI();
 
   templateFile = QUrl(settings.value("template", "").toString());
-  // if (templateFile != "") {
   templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
-  // }
 
   doc->setHighlightingMode("Latex");
 
@@ -214,10 +206,9 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   connect(prevImage, SIGNAL(triggered()), this, SLOT(gotoPreviousImage()));
   connect(nextImage, SIGNAL(triggered()), this, SLOT(gotoNextImage()));
 
-  connect((QObject *)doc, SIGNAL(textInserted(KTextEditor::Document *, KTextEditor::Range)), this,
-          SLOT(textInserted(KTextEditor::Document *, KTextEditor::Range)));
-  // connect((QObject *)doc, SIGNAL(textRemoved(KTextEditor::Document *, KTextEditor::Range)), this,
-          // SLOT(textRemoved(KTextEditor::Document *, KTextEditor::Range)));
+  connect((QObject *)doc, SIGNAL(textChanged(KTextEditor::Document *)), this,
+          SLOT(textChanged(KTextEditor::Document *)));
+  connect(templateLabel, SIGNAL(textEdited(const QString&)), this, SLOT(updateTemplate(const QString&)));
 }
 
 void MainWindow::showCompilerSelection() {
@@ -325,13 +316,18 @@ void MainWindow::setupEditor() {
 
 void MainWindow::load() { load(QFileDialog::getOpenFileUrl()); }
 
+void MainWindow::updateTemplate(const QString& filename) {
+  QSettings settings;
+  templateFile = QUrl::fromUserInput(filename);
+  settings.setValue("template", filename);
+  refresh();
+}
+
 void MainWindow::browse() {
   QUrl newTemplateFile = QFileDialog::getOpenFileUrl(this, QString("Open template"));
   if (newTemplateFile.fileName() != "") {
-    templateFile = newTemplateFile;
-    templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
-    QSettings settings;
-    settings.setValue("template", templateFile.url(QUrl::PreferLocalFile));
-    refresh();
+      QString filename = newTemplateFile.url(QUrl::PreferLocalFile);
+      templateLabel->setText(filename);
+      updateTemplate(filename);
   }
 }

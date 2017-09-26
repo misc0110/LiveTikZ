@@ -35,8 +35,7 @@ public:
 public slots:
   void load(const QUrl &url);
   void load();
-  void textInserted(KTextEditor::Document *document, const KTextEditor::Range &range);
-  void textRemoved(KTextEditor::Document *document, const KTextEditor::Range &range);
+  void textChanged(KTextEditor::Document *document);
   void refresh();
   void browse();
   void render(double scale);
@@ -45,7 +44,7 @@ public slots:
   void updateLog();
   void gotoPreviousImage();
   void gotoNextImage();
-  
+  void updateTemplate(const QString& filename);
 
 private:
   void setupActions();
