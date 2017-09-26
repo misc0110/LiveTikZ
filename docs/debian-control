@@ -3,7 +3,7 @@ Version: %VERSION%
 Section: devel
 Priority: optional
 Architecture: amd64
-Depends: libpoppler-qt5-1, kdelibs5-plugins, texlive-latex-base, pgf, libc6
+Depends: libpoppler-qt5-1, kdelibs5-plugins, texlive-latex-base, ktexteditor-katepart, libc6
 Maintainer: Michael Schwarz <michael.schwarz91@gmail.com>
 Description: LiveTikZ
  A live preview for TikZ drawings.
