@@ -12,17 +12,17 @@ int main(int argc, char *argv[]) {
 
   KAboutData aboutData(
     QStringLiteral("livetikz"),
-    i18n("A tikz editor with live preview."),
+    i18n("LiveTikZ"),
     QStringLiteral("0.1"),
-    i18n("A simple text area"),
+    i18n("A TikZ editor with live preview."),
     KAboutLicense::GPL,
     i18n("(c) 2017 Michael Schwarz"),
     "",
-    "misc0110.net"
+    "https://misc0110.net"
     );
 
   QCommandLineParser parser;
-  parser.setApplicationDescription(QCoreApplication::translate("main", "A tikz editor with live preview."));
+  parser.setApplicationDescription(QCoreApplication::translate("main", "A TikZ editor with live preview."));
   parser.addHelpOption();
   parser.addVersionOption();
   parser.addPositionalArgument("file", QCoreApplication::translate("main", "Document to open."));

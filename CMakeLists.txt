@@ -3,6 +3,8 @@ project(livetikz)
 cmake_minimum_required(VERSION 3.5)
 set(QT_MIN_VERSION "5.3.0")
 set(KF5_MIN_VERSION "5.2.0")
+set(CMAKE_AUTORCC ON)
+
 
 find_package(ECM 1.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR}
@@ -38,7 +40,7 @@ set(livetikz_SRCS
    ZoomScrollImage.cpp
 )
 
-add_executable(livetikz ${livetikz_SRCS})
+add_executable(livetikz ${livetikz_SRCS} resource.qrc)
 
 target_link_libraries(livetikz
   Qt5::Widgets

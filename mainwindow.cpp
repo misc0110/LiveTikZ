@@ -294,6 +294,8 @@ void MainWindow::setupUI() {
   log->resize(mainScreenSize.width() * 0.7, mainScreenSize.height() * 0.7 * 0.1);
   display->resize(mainScreenSize.width() * 0.7 * 0.5, mainScreenSize.height() * 0.7 * 1);
   view->resize(mainScreenSize.width() * 0.7 * 0.5, mainScreenSize.height() * 0.7 * 0.9);
+  
+  setWindowIcon(QIcon(":/logo.png"));
 }
 
 void MainWindow::setupEditor() {
