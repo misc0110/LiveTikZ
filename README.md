@@ -32,6 +32,8 @@ The following packages are required to compile from source:
 * qt4-dev-tools
 * libpoppler-qt4-dev
 * kdelibs5-dev
+* libkf5parts-dev
+* libkf5texteditor-dev
 
 ## Compile
 

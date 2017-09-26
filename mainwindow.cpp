@@ -1,18 +1,17 @@
 #include "mainwindow.h"
 
-#include <kaction.h>
-#include <kactioncollection.h>
-#include <kconfig.h>
-#include <kedittoolbar.h>
-#include <kfiledialog.h>
-#include <kmessagebox.h>
-#include <kservice.h>
-#include <kstandardaction.h>
-#include <kstatusbar.h>
-#include <kurl.h>
-#include <ktoolbar.h>
+#include <KActionCollection>
+#include <QFileDialog>
+#include <KMessageBox>
+#include <KService>
+#include <KStandardAction>
+#include <QUrl>
+#include <KToolBar>
 
 #include <QApplication>
+#include <QTemporaryDir>
+#include <QTemporaryFile>
+#include <QFile>
 #include <iostream>
 
 #include <QtCore/QDebug>
@@ -63,16 +62,17 @@ void MainWindow::render(double scale) {
   }
 }
 
-void MainWindow::compile(QTemporaryFile &file) {
+void MainWindow::compile() {
   QSettings settings;
   QString program = settings.value("compiler", "pdflatex").toString();
   QStringList arguments;
   if (program == "pdflatex") {
     arguments << "-halt-on-error";
   }
-  arguments << file.fileName();
+  arguments << "main.tex";
 
   renderProcess = new QProcess(this);
+  renderProcess->setWorkingDirectory(dir->path());
   renderProcess->start(program, arguments);
 
   log->setText("Compiling...");
@@ -87,51 +87,56 @@ void MainWindow::compile(QTemporaryFile &file) {
 }
 
 void MainWindow::refresh() {
-  QTemporaryFile file;
+  dir = new QTemporaryDir();
+  dir->setAutoRemove(false);
 
-  file.setAutoRemove(false);
-  if (file.open()) {
-    QTextStream out(&file);
+  if (dir->isValid()) {
+    QFile file(dir->path() + QString("/main.tex"));
 
-    QFile inputFile(templateFile.pathOrUrl());
-    if (inputFile.open(QIODevice::ReadOnly)) {
-      QTextStream in(&inputFile);
-      while (!in.atEnd()) {
-        QString line = in.readLine();
-        if (line.trimmed() == "<>") {
-          out << doc->text() << "\n";
-        } else {
-          out << line << "\n";
+    if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+      QTextStream out(&file);
+
+      QFile inputFile(templateFile.fileName());
+      if (inputFile.exists() && inputFile.open(QIODevice::ReadOnly)) {
+        QTextStream in(&inputFile);
+        while (!in.atEnd()) {
+          QString line = in.readLine();
+          if (line.trimmed() == "<>") {
+            out << doc->text() << "\n";
+          } else {
+            out << line << "\n";
+          }
         }
+        inputFile.close();
+      } else {
+        out << "\\documentclass{article}\n"
+            << "\\usepackage{tikz}\n"
+            << "\\usepackage{color}\n"
+            << "\\usepackage{amssymb}\n"
+            << "\\usepackage{pgfplots}\n"
+            << "\\usetikzlibrary{pgfplots.groupplots}\n"
+            << "\\usetikzlibrary{arrows}\n"
+            << "\\usetikzlibrary{patterns}\n"
+            << "\\usetikzlibrary{positioning}\n"
+            << "\\usetikzlibrary{decorations.pathreplacing}\n"
+            << "\\usetikzlibrary{shapes.arrows}\n"
+            << "\\usetikzlibrary{pgfplots.groupplots}\n"
+            << "\\pgfplotsset{compat=1.13}\n";
+        out << "\\begin{document}\n";
+        out << doc->text() << "\n";
+        out << "\\end{document}\n";
       }
-      inputFile.close();
-    } else {
-      out << "\\documentclass{article}\n"
-          << "\\usepackage{tikz}\n"
-          << "\\usepackage{color}\n"
-          << "\\usepackage{amssymb}\n"
-          << "\\usepackage{pgfplots}\n"
-          << "\\usetikzlibrary{pgfplots.groupplots}\n"
-          << "\\usetikzlibrary{arrows}\n"
-          << "\\usetikzlibrary{patterns}\n"
-          << "\\usetikzlibrary{positioning}\n"
-          << "\\usetikzlibrary{decorations.pathreplacing}\n"
-          << "\\usetikzlibrary{shapes.arrows}\n"
-          << "\\usetikzlibrary{pgfplots.groupplots}\n"
-          << "\\pgfplotsset{compat=1.13}\n";
-      out << "\\begin{document}\n";
-      out << doc->text() << "\n";
-      out << "\\end{document}\n";
+
+      out.flush();
+      file.flush();
+      file.close();
+
+      if (renderProcess != NULL) {
+        refreshTimer->start(1000); // wait for old rendering to finish
+      }
+
+      compile();
     }
-
-    file.flush();
-    file.close();
-
-    if (renderProcess != NULL) {
-      refreshTimer->start(1000); // wait for old rendering to finish
-    }
-
-    compile(file);
   }
 }
 
@@ -160,23 +165,30 @@ void MainWindow::renderFinished(int code) {
   killButton->setVisible(false);
   
   delete currentDoc;
-  currentDoc = Poppler::Document::load("qt_temp.pdf");
-  if (currentDoc) {
-    currentDoc->setRenderHint(Poppler::Document::TextAntialiasing);
-    currentDoc->setRenderHint(Poppler::Document::Antialiasing);
-    currentDoc->setRenderHint(Poppler::Document::TextHinting);
-    currentDoc->setRenderHint(Poppler::Document::TextSlightHinting);
-    currentDoc->setRenderHint(Poppler::Document::ThinLineSolid);
+  currentDoc = NULL;
 
-    render();
+  QFile pdf_file(dir->path() + "/main.pdf");
+  if (pdf_file.exists()) {
+    currentDoc = Poppler::Document::load(dir->path() + "/main.pdf");
+    if (currentDoc) {
+      currentDoc->setRenderHint(Poppler::Document::TextAntialiasing);
+      currentDoc->setRenderHint(Poppler::Document::Antialiasing);
+      currentDoc->setRenderHint(Poppler::Document::TextHinting);
+      currentDoc->setRenderHint(Poppler::Document::TextSlightHinting);
+      currentDoc->setRenderHint(Poppler::Document::ThinLineSolid);
+
+      render();
+    }
   }
+
+  dir->remove();
+  delete dir;
+  dir = NULL;
+
   renderProcess = NULL;
 }
 
 MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0) {
-  QCoreApplication::setOrganizationName("misc0110");
-  QCoreApplication::setOrganizationDomain("misc0110.net");
-  QCoreApplication::setApplicationName("livetikz");
   QSettings settings;
 
   setupEditor();
@@ -184,10 +196,10 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   setupMenu();
   setupUI();
 
-  templateFile = KUrl(settings.value("template", "").toString());
-  if (templateFile != "") {
-    templateLabel->setText(templateFile.pathOrUrl());
-  }
+  templateFile = QUrl(settings.value("template", "").toString());
+  // if (templateFile != "") {
+  templateLabel->setText(templateFile.fileName());
+  // }
 
   doc->setHighlightingMode("Latex");
 
@@ -204,8 +216,8 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
 
   connect((QObject *)doc, SIGNAL(textInserted(KTextEditor::Document *, KTextEditor::Range)), this,
           SLOT(textInserted(KTextEditor::Document *, KTextEditor::Range)));
-  connect((QObject *)doc, SIGNAL(textRemoved(KTextEditor::Document *, KTextEditor::Range)), this,
-          SLOT(textRemoved(KTextEditor::Document *, KTextEditor::Range)));
+  // connect((QObject *)doc, SIGNAL(textRemoved(KTextEditor::Document *, KTextEditor::Range)), this,
+          // SLOT(textRemoved(KTextEditor::Document *, KTextEditor::Range)));
 }
 
 void MainWindow::showCompilerSelection() {
@@ -222,7 +234,7 @@ void MainWindow::showCompilerSelection() {
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::load(const KUrl &url) { katePart->openUrl(url); }
+void MainWindow::load(const QUrl &url) { katePart->openUrl(url); }
 
 void MainWindow::setupActions() {
   KStandardAction::open(this, SLOT(load()), actionCollection());
@@ -311,14 +323,14 @@ void MainWindow::setupEditor() {
   }
 }
 
-void MainWindow::load() { load(KFileDialog::getOpenUrl()); }
+void MainWindow::load() { load(QFileDialog::getOpenFileUrl()); }
 
 void MainWindow::browse() {
-  KUrl newTemplateFile = KFileDialog::getOpenUrl();
-  if (newTemplateFile.pathOrUrl() != "") {
+  QUrl newTemplateFile = QFileDialog::getOpenFileUrl();
+  if (newTemplateFile.fileName() != "") {
     templateFile = newTemplateFile;
-    templateLabel->setText(templateFile.pathOrUrl());
+    templateLabel->setText(templateFile.fileName());
     QSettings settings;
-    settings.setValue("template", templateFile.pathOrUrl());
+    settings.setValue("template", templateFile.fileName());
   }
 }
