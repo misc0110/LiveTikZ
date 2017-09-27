@@ -5,7 +5,6 @@ set(QT_MIN_VERSION "5.3.0")
 set(KF5_MIN_VERSION "5.2.0")
 set(CMAKE_AUTORCC ON)
 
-
 find_package(ECM 1.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -53,7 +52,12 @@ target_link_libraries(livetikz
 )
 
 ########### install files ###############
+set(LIVETIKZ_DATA_INSTALL_DIR ${DATA_INSTALL_DIR}/livetikz)
+set(LIVETIKZ_TEMPLATES_INSTALL_DIR ${LIVETIKZ_DATA_INSTALL_DIR}/templates)
+
 install(TARGETS livetikz DESTINATION ${BIN_INSTALL_DIR} )
-install(FILES  
-    DESTINATION ${DATA_INSTALL_DIR}/livetikz
-    )
+install(FILES DESTINATION ${DATA_INSTALL_DIR}/livetikz)
+install(FILES data/livetikz.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
+install(FILES data/templates/template_example.pgs
+	            data/templates/template_beamer.pgs
+        DESTINATION ${LIVETIKZ_TEMPLATES_INSTALL_DIR})

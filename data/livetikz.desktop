@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LiveTikZ
+Comment=A live preview for TikZ drawings 
+MimeType=text/x-pgf;text/x-tex;
+Exec=livetikz %f
+Terminal=false
+Categories=Office;Editor;
+Keywords=TikZ;LaTeX;editor;
