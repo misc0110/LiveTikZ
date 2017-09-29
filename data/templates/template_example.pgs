@@ -1,7 +1,9 @@
 \documentclass{article}
+\usepackage[utf8]{inputenc}
 \usepackage{tikz}
 \usepackage{color}
 \usepackage{amssymb}
+\usepackage{pmboxdraw}
 \usepackage{pgfplots}
 \usetikzlibrary{pgfplots.groupplots}
 \usetikzlibrary{arrows}
