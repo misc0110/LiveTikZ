@@ -16,7 +16,7 @@ include(KDECompilerSettings)
 include(FeatureSummary)
 
 # include poppler
-include_directories(/usr/include/poppler/qt5)
+include(FindPoppler)
 
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core    # QCommandLineParser, QStringLiteral
@@ -30,6 +30,9 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
     TextEditor      # KTextEdit
     Parts           # Parts
 )
+
+find_package(Poppler REQUIRED COMPONENTS Qt5)
+
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
 set(livetikz_SRCS
@@ -48,7 +51,7 @@ target_link_libraries(livetikz
   KF5::XmlGui
   KF5::TextEditor
   KF5::Parts
-  poppler-qt5
+  Poppler::Qt5
 )
 
 ########### install files ###############
