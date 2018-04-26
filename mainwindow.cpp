@@ -158,6 +158,8 @@ void MainWindow::renderFinished(int code) {
 
   killButton->setVisible(false);
   
+  if(!dir) return;
+  
   delete currentDoc;
   currentDoc = NULL;
 
