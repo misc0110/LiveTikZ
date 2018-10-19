@@ -70,6 +70,7 @@ private:
   KTextEditor::View *view;
   KTextEditor::Document *doc;
   ZoomScrollImage *display;
+  QFileInfo texdir;
   QTemporaryDir* dir;
   Poppler::Document *currentDoc;
 

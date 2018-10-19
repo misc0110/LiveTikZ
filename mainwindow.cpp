@@ -60,13 +60,27 @@ void MainWindow::compile() {
   QSettings settings;
   QString program = settings.value("compiler", "pdflatex").toString();
   QStringList arguments;
+  QTemporaryDir tmpdir;
+  tmpdir.setAutoRemove(true);
+  
   if (program == "pdflatex") {
     arguments << "-halt-on-error";
   }
-  arguments << "main.tex";
+  if(dir->path() == "") {
+    return;
+  }
+  if(texdir.absolutePath() == "") {
+    std::cout << "need a temporary directory" << std::endl;
+    texdir = QFileInfo(tmpdir.path());
+  }
+  
+  arguments << dir->filePath("_livetikz_preview.tex");
 
+  std::cout << "Arguments: " << dir->filePath("_livetikz_preview.tex").toStdString() << std::endl;
+  std::cout << "WD: " << texdir.absolutePath().toStdString() << std::endl;
+  
   renderProcess = new QProcess(this);
-  renderProcess->setWorkingDirectory(dir->path());
+  renderProcess->setWorkingDirectory(texdir.absolutePath());
   renderProcess->start(program, arguments);
 
   log->setText("Compiling...");
@@ -81,11 +95,13 @@ void MainWindow::compile() {
 }
 
 void MainWindow::refresh() {
-  dir = new QTemporaryDir();
-  dir->setAutoRemove(false);
+  if(!dir) {
+    dir = new QTemporaryDir();
+    dir->setAutoRemove(false);
+  }
 
   if (dir->isValid()) {
-    QFile file(dir->path() + QString("/main.tex"));
+    QFile file(dir->filePath("_livetikz_preview.tex"));
 
     if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
       QTextStream out(&file);
@@ -163,9 +179,10 @@ void MainWindow::renderFinished(int code) {
   delete currentDoc;
   currentDoc = NULL;
 
-  QFile pdf_file(dir->path() + "/main.pdf");
+  QFile pdf_file(QDir::cleanPath(texdir.absolutePath() + QDir::separator() + "_livetikz_preview.pdf"));
   if (pdf_file.exists()) {
-    currentDoc = Poppler::Document::load(dir->path() + "/main.pdf");
+    QFile::rename(QDir::cleanPath(texdir.absolutePath() + QDir::separator() + "_livetikz_preview.pdf"), dir->filePath("_livetikz_preview.pdf"));
+    currentDoc = Poppler::Document::load(dir->filePath("_livetikz_preview.pdf"));
     if (currentDoc) {
       currentDoc->setRenderHint(Poppler::Document::TextAntialiasing);
       currentDoc->setRenderHint(Poppler::Document::Antialiasing);
@@ -192,6 +209,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   setupMenu();
   setupUI();
 
+  dir = NULL;
   templateFile = QUrl(settings.value("template", "").toString());
   templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
 
@@ -227,7 +245,10 @@ void MainWindow::showCompilerSelection() {
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::load(const QUrl &url) { katePart->openUrl(url); }
+void MainWindow::load(const QUrl &url) { 
+    texdir = QFileInfo(url.toLocalFile());
+    katePart->openUrl(url); 
+}
 
 void MainWindow::setupActions() {
   KStandardAction::open(this, SLOT(load()), actionCollection());
