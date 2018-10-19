@@ -33,7 +33,10 @@ The following packages are required to compile from source:
 * libkf5parts-dev
 * libkf5texteditor-dev
 * libpoppler-qt5-dev
+* libpoppler-cpp-dev
+* libpoppler-glib-dev
 * kdelibs5-dev
+* gettext
 
 ## Compile
 
