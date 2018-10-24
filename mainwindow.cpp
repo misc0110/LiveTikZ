@@ -143,9 +143,9 @@ void MainWindow::refresh() {
 
       if (renderProcess != NULL) {
         refreshTimer->start(1000); // wait for old rendering to finish
+      } else {
+        compile();
       }
-
-      compile();
     }
   }
 }
