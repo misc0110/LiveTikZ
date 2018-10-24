@@ -36,6 +36,7 @@ The following packages are required to compile from source:
 * libpoppler-cpp-dev
 * libpoppler-glib-dev
 * kdelibs5-dev
+* ktexteditor-katepart
 * gettext
 
 ## Compile
