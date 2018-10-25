@@ -242,7 +242,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
 
 void MainWindow::showCompilerSelection() {
   QStringList items;
-  items << tr("pdflatex") << tr("latexrun");
+  items << tr("pdflatex") << tr("latexrun") << tr("xelatex") << tr("lualatex");
 
   bool ok;
   QString item = QInputDialog::getItem(this, tr("LaTeX compiler"), tr("Compiler:"), items, 0, false, &ok);
