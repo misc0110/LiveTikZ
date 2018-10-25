@@ -86,7 +86,7 @@ void MainWindow::compile() {
   log->setText("Compiling...");
   renderOutput = "";
   connect(renderProcess, SIGNAL(finished(int)), this, SLOT(renderFinished(int)));
-
+  connect(renderProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(renderFailed(QProcess::ProcessError)));
   connect(renderProcess, SIGNAL(readyReadStandardError()), this, SLOT(updateLog()));
   connect(renderProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateLog()));
   
@@ -147,6 +147,9 @@ void MainWindow::refresh() {
         compile();
       }
     }
+  } else if(dir) {
+      delete dir;
+      dir = NULL;
   }
 }
 
@@ -165,11 +168,17 @@ void MainWindow::updateLog() {
   }
 }
 
+void MainWindow::renderFailed(QProcess::ProcessError) {
+    appendLog("Failed to execute compiler\n");
+    renderFinished(1);
+}
+
+
 void MainWindow::renderFinished(int code) {
   if (code == 0) {
-    appendLog("Done!");
+    appendLog("Done!\n");
   } else {
-    appendLog("Error!");
+    appendLog("Error!\n");
   }
 
   killButton->setVisible(false);
@@ -292,7 +301,7 @@ void MainWindow::setupUI() {
   
   logLayout->addWidget(log);
   
-  killButton = new QPushButton("Kill pdflatex");
+  killButton = new QPushButton("Abort compilation");
   killButton->setVisible(false);
   logLayout->addWidget(killButton);
   

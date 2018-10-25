@@ -40,6 +40,7 @@ public slots:
   void browse();
   void render(double scale);
   void renderFinished(int code);
+  void renderFailed(QProcess::ProcessError);
   void showCompilerSelection();
   void updateLog();
   void gotoPreviousImage();
