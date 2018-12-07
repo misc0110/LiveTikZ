@@ -61,6 +61,7 @@ set(LIVETIKZ_TEMPLATES_INSTALL_DIR ${LIVETIKZ_DATA_INSTALL_DIR}/templates)
 install(TARGETS livetikz DESTINATION ${BIN_INSTALL_DIR} )
 install(FILES DESTINATION ${DATA_INSTALL_DIR}/livetikz)
 install(FILES data/livetikz.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
+install(FILES data/livetikz.png DESTINATION ${ICON_INSTALL_DIR})
 install(FILES data/templates/template_example.pgs
 	            data/templates/template_beamer.pgs
         DESTINATION ${LIVETIKZ_TEMPLATES_INSTALL_DIR})
