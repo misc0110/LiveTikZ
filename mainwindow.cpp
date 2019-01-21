@@ -93,6 +93,7 @@ void MainWindow::compile() {
     texdir = QFileInfo(tmpdir.path());
   }
   QFileInfo templateDir = QFileInfo(templateFile.path());
+  // TODO: make workdir user-configurable
   if (templateDir.absolutePath() == "") {
     workdir = texdir;
   } else {
@@ -109,7 +110,6 @@ void MainWindow::compile() {
   std::cout << "Compiler workdir: " << workdir.absolutePath().toStdString() << std::endl;
 
   renderProcess = new QProcess(this);
-  //~ renderProcess->setWorkingDirectory(texdir.absolutePath());
   renderProcess->setWorkingDirectory(workdir.absolutePath());
   clearLog();
   renderProcess->start(program, arguments);
@@ -438,7 +438,7 @@ void MainWindow::handleTexfileChanged(const QString& filename) {
   if (!usersaved) {
     std::cout << "Texfile " << filename.toStdString() << " externally changed." << std::endl;
     /* Reloading */
-    katePart->openUrl(QUrl(QUrl::fromUserInput(filename)));
+    katePart->openUrl(QUrl::fromLocalFile(filename));
   }
   /* Always re-watch file */
   if (texfileWatcher) {
@@ -453,7 +453,7 @@ void MainWindow::updateTemplate(const QString& filename) {
   QUrl oldTemplateFile = QUrl(settings.value("template", "").toString());
   templateWatcher.removePath(oldTemplateFile.path());
 
-  templateFile = QUrl::fromUserInput(filename);
+  templateFile = QUrl::fromLocalFile(filename);
   std::cout << "Loading template " << templateFile.path().toStdString() << std::endl;
   templateWatcher.addPath(templateFile.path());
   settings.setValue("template", filename);
