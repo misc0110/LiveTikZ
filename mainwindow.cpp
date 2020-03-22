@@ -261,6 +261,8 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   templateFile = QUrl(settings.value("template", "").toString());
   updateTemplate(templateFile.path());
   templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
+  
+  texfileWatcher = NULL;
 
   doc->setHighlightingMode("Latex");
 
@@ -354,15 +356,16 @@ void MainWindow::setupUI() {
   window = new QWidget;
   mainLayout = new QHBoxLayout;
   splitView = new QSplitter(window);
+  
   templateLabel = new QLineEdit("Select template...");
-
   browseButton = new QPushButton("Browse");
   templateLayout = new QHBoxLayout;
   templateLayout->addWidget(templateLabel);
   templateLayout->addWidget(browseButton);
 
-  leftLayout = new QVBoxLayout;
-  leftLayout->addLayout(templateLayout);
+  containerLayout = new QVBoxLayout;
+  splitLogView = new QSplitter(Qt::Vertical, window);
+  containerLayout->addLayout(templateLayout);
   splitView->addWidget(view);
 
   display = new ZoomScrollImage;
@@ -371,12 +374,12 @@ void MainWindow::setupUI() {
   log->setReadOnly(true);
   log->ensureCursorVisible();
   QFontMetrics m(log->font());
-  log->setFixedHeight(5 * m.lineSpacing());
+//   log->setFixedHeight(5 * m.lineSpacing());
 
   logLayout = new QHBoxLayout;
   
   splitView->addWidget(display);
-  leftLayout->addWidget(splitView);
+  splitLogView->addWidget(splitView);
   
   logLayout->addWidget(log);
   
@@ -384,9 +387,16 @@ void MainWindow::setupUI() {
   killButton->setVisible(false);
   logLayout->addWidget(killButton);
   
-  leftLayout->addLayout(logLayout);
+  logWidget = new QWidget();
+  logWidget->setLayout(logLayout);
   
-  mainLayout->addLayout(leftLayout);
+  splitLogView->addWidget(logWidget);
+  splitLogView->setStretchFactor(0, 7);
+  splitLogView->setStretchFactor(1, 1);
+  
+  containerLayout->addWidget(splitLogView);
+  
+  mainLayout->addLayout(containerLayout);
 
   window->setLayout(mainLayout);
   setCentralWidget(window);

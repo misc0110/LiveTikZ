@@ -13,10 +13,10 @@ int main(int argc, char *argv[]) {
   KAboutData aboutData(
     QStringLiteral("livetikz"),
     i18n("LiveTikZ"),
-    QStringLiteral("0.2"),
+    QStringLiteral("0.3"),
     i18n("A TikZ editor with live preview."),
     KAboutLicense::GPL,
-    i18n("(c) 2017-2018 Michael Schwarz"),
+    i18n("(c) 2017-2020 Michael Schwarz"),
     "",
     "https://misc0110.net"
     );

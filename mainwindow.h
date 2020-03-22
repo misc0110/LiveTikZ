@@ -71,7 +71,9 @@ private:
   QHBoxLayout *templateLayout;
   QHBoxLayout *logLayout;
   QSpacerItem *spacerItem;
-  QVBoxLayout *leftLayout;
+  QVBoxLayout *containerLayout;
+  QSplitter* splitLogView;
+  QWidget *logWidget;
 
   KParts::ReadWritePart *katePart;
   KTextEditor::View *view;
