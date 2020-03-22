@@ -5,6 +5,7 @@ Name=LiveTikZ
 Comment=A live preview for TikZ drawings 
 MimeType=text/x-pgf;text/x-tex;
 Exec=livetikz %f
+Icon=livetikz.png
 Terminal=false
 Categories=Office;Editor;
 Keywords=TikZ;LaTeX;editor;

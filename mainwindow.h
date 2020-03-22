@@ -17,6 +17,7 @@
 #include <QSplitter>
 #include <QTemporaryFile>
 #include <QTemporaryDir>
+#include <QFileSystemWatcher>
 #include <QTextEdit>
 #include <QTextCursor>
 #include <QTimer>
@@ -36,6 +37,7 @@ public slots:
   void load(const QUrl &url);
   void load();
   void textChanged(KTextEditor::Document *document);
+  void documentSaved(KTextEditor::Document *document, bool saveas);
   void refresh();
   void browse();
   void render(double scale);
@@ -43,6 +45,9 @@ public slots:
   void renderFailed(QProcess::ProcessError);
   void showCompilerSelection();
   void updateLog();
+  void watchme(const QString& filename);
+  void handleTemplateChanged(const QString& filename);
+  void handleTexfileChanged(const QString& filename);
   void gotoPreviousImage();
   void gotoNextImage();
   void updateTemplate(const QString& filename);
@@ -55,7 +60,8 @@ private:
 
   void render();
   void compile();
-  
+
+  void clearLog();
   void appendLog(QString str);
 
 
@@ -72,6 +78,7 @@ private:
   KTextEditor::Document *doc;
   ZoomScrollImage *display;
   QFileInfo texdir;
+  QFileInfo workdir;
   QTemporaryDir* dir;
   Poppler::Document *currentDoc;
 
@@ -85,7 +92,10 @@ private:
   QPushButton *browseButton;
 
   QPushButton* killButton;
-  
+
+  QFileSystemWatcher templateWatcher;
+  QFileSystemWatcher *texfileWatcher;
+
   QProcess *renderProcess;
   QString renderOutput;
   
@@ -93,6 +103,7 @@ private:
   QAction* prevImage;
   
   int currentPage;
+  bool usersaved;
 };
 
 #endif
