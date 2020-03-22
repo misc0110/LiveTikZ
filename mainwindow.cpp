@@ -19,7 +19,7 @@
 
 #include <QtCore/QDebug>
 #undef QT_NO_DEBUG
-#include <kdebug.h>
+// #include <kdebug.h>
 
 QString getFilePath(QTemporaryDir* dir, const char* file) {
   QString path(dir->path());
