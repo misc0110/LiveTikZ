@@ -21,11 +21,13 @@
 #include <QTextEdit>
 #include <QTextCursor>
 #include <QTimer>
+#include <QMessageLogger>
 #include <KParts/MainWindow>
 #include <KTextEditor/Document>
 #include <KTextEditor/View>
 #include <poppler-qt5.h>
 #include <ZoomScrollImage.h>
+
 
 class MainWindow : public KParts::MainWindow {
   Q_OBJECT

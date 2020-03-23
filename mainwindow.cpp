@@ -19,13 +19,19 @@
 
 #include <QtCore/QDebug>
 #undef QT_NO_DEBUG
-// #include <kdebug.h>
+
 
 QString getFilePath(QTemporaryDir* dir, const char* file) {
   QString path(dir->path());
   path.append("/");
   path.append(file);
   return path;
+}
+
+inline QDebug operator<<(QDebug dbg, const std::string& str)
+{
+    dbg.nospace() << QString::fromStdString(str);
+    return dbg.space();
 }
 
 void MainWindow::textChanged(KTextEditor::Document *document) {
@@ -37,7 +43,7 @@ void MainWindow::textChanged(KTextEditor::Document *document) {
 void MainWindow::documentSaved(KTextEditor::Document *document, bool saveas) {
   (void)document;
   (void)saveas;
-  std::cout << "Document saved" << std::endl;
+  qDebug() << "Document saved";
   usersaved = true;
 }
 
@@ -89,7 +95,7 @@ void MainWindow::compile() {
     return;
   }
   if(texdir.absolutePath() == "") {
-    std::cout << "need a temporary directory" << std::endl;
+    qDebug() << "Creating a temporary directory";
     texdir = QFileInfo(tmpdir.path());
   }
   QFileInfo templateDir = QFileInfo(templateFile.path());
@@ -100,8 +106,8 @@ void MainWindow::compile() {
 
   arguments << getFilePath(dir, "_livetikz_preview.tex");
 
-  std::cout << "Compiler arguments: " << arguments.join(QChar(' ')).toStdString() << std::endl;
-  std::cout << "Compiler workdir: " << workdir.absolutePath().toStdString() << std::endl;
+  qDebug() << "Compiler arguments: " << arguments.join(QChar(' ')).toStdString();
+  qDebug() << "Compiler workdir: " << workdir.absolutePath().toStdString();
 
   renderProcess = new QProcess(this);
   renderProcess->setWorkingDirectory(workdir.absolutePath());
@@ -175,7 +181,7 @@ void MainWindow::refresh() {
       }
     }
   } else if(dir) {
-      std::cout << "Deleting invalid dir" << dir->path().toStdString() << std::endl;
+      qDebug() << "Deleting invalid dir" << dir->path().toStdString();
       delete dir;
       dir = NULL;
   }
@@ -203,6 +209,7 @@ void MainWindow::updateLog() {
 
 void MainWindow::renderFailed(QProcess::ProcessError) {
     appendLog("Failed to execute compiler\n");
+    qDebug() << "Could not compile";
     renderFinished(1);
 }
 
@@ -210,8 +217,10 @@ void MainWindow::renderFailed(QProcess::ProcessError) {
 void MainWindow::renderFinished(int code) {
   if (code == 0) {
     appendLog("Done!\n");
+    qDebug() << "Done";
   } else {
     appendLog("Error!\n");
+    qDebug() << "Error: " << code;
   }
 
   killButton->setVisible(false);
@@ -318,17 +327,17 @@ void MainWindow::watchme(const QString& filename) {
   texfileWatcher = new QFileSystemWatcher();
   connect(texfileWatcher, SIGNAL(fileChanged(const QString&)), this, SLOT(handleTexfileChanged(const QString&)));
 
-  std::cout << "Watching " << filename.toStdString() << std::endl;
+  qDebug() << "Watching " << filename.toStdString();
   int retry_count = 10;
   while(!texfileWatcher->addPath(filename) && retry_count--) {
     /* If the file has not been re-created yet, wait some time */
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << "Retrying to watch..." << std::endl;
+    qDebug() << "Retrying to watch...";
   }
 }
 
 void MainWindow::load(const QUrl &url) { 
-  std::cout << "Loading " << url.toString().toStdString() << std::endl;
+  qDebug() << "Loading " << url.toString().toStdString();
   texdir = QFileInfo(url.toLocalFile());
   watchme(url.toLocalFile());
   
@@ -439,10 +448,12 @@ void MainWindow::setupEditor() {
       view = ((KTextEditor::View *)katePart->widget());
       doc = view->document();
     } else {
+      qDebug() << "katePart is NULL";
       KMessageBox::error(this, "Could not create editor");
       qApp->quit();
     }
   } else {
+    qDebug() << "katepart service not found";
     KMessageBox::error(this, "Service katepart not found - please install kate");
     qApp->quit();
   }
@@ -451,13 +462,13 @@ void MainWindow::setupEditor() {
 void MainWindow::load() { load(QFileDialog::getOpenFileUrl()); }
 
 void MainWindow::handleTemplateChanged(const QString& filename) {
-  std::cout << filename.toStdString() << " changed." << std::endl;
+  qDebug() << filename.toStdString() << " changed.";
   updateTemplate(filename);
 }
 
 void MainWindow::handleTexfileChanged(const QString& filename) {
   if (!usersaved) {
-    std::cout << "Texfile " << filename.toStdString() << " externally changed." << std::endl;
+    qDebug() << "Texfile " << filename.toStdString() << " externally changed.";
     /* Reloading */
     katePart->openUrl(QUrl::fromLocalFile(filename));
   }
@@ -475,7 +486,7 @@ void MainWindow::updateTemplate(const QString& filename) {
   templateWatcher.removePath(oldTemplateFile.path());
 
   templateFile = QUrl::fromLocalFile(filename);
-  std::cout << "Loading template " << templateFile.path().toStdString() << std::endl;
+  qDebug() << "Loading template " << templateFile.path().toStdString();
   templateWatcher.addPath(templateFile.path());
   settings.setValue("template", filename);
   refresh();
@@ -493,7 +504,7 @@ void MainWindow::browse() {
 void MainWindow::chooseWorkdir() {
     workdir = QFileInfo(QFileDialog::getExistingDirectory(this, QString("Select Working Directory"),
                                                 workdir.absolutePath(), QFileDialog::ShowDirsOnly) + "/");
-    std::cout << "Selected working directory: " << workdir.path().toStdString() << std::endl;
+    qDebug() << "Selected working directory: " << workdir.path().toStdString();
     updateRootDirectory(); 
     refresh();
 }
