@@ -5,7 +5,7 @@ mkdir -pv livetikz/usr/share/doc/livetikz/
 cp build/livetikz livetikz/usr/bin
 strip livetikz/usr/bin/livetikz
 mkdir -p livetikz/DEBIAN
-sed "s/%VERSION%/0.1/" docs/debian-control > livetikz/DEBIAN/control
+sed "s/%VERSION%/0.3/" docs/debian-control > livetikz/DEBIAN/control
 echo "initial version" > livetikz/usr/share/doc/livetikz/changelog
 echo "" > livetikz/usr/share/doc/livetikz/copyright
 gzip -c -9 livetikz/usr/share/doc/livetikz/changelog > livetikz/usr/share/doc/livetikz/changelog.gz
