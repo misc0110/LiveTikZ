@@ -93,12 +93,6 @@ void MainWindow::compile() {
     texdir = QFileInfo(tmpdir.path());
   }
   QFileInfo templateDir = QFileInfo(templateFile.path());
-  // TODO: make workdir user-configurable
-  if (templateDir.absolutePath() == "") {
-    workdir = texdir;
-  } else {
-    workdir = templateDir;
-  }
 
   QString odir("--output-directory=");
   odir.append(dir->path());
@@ -273,6 +267,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
 
   connect(display, SIGNAL(zoomChanged(double)), this, SLOT(render(double)));
   connect(browseButton, SIGNAL(clicked()), SLOT(browse()));
+  connect(workdirButton, SIGNAL(clicked()), SLOT(chooseWorkdir()));
   
   connect(prevImage, SIGNAL(triggered()), this, SLOT(gotoPreviousImage()));
   connect(nextImage, SIGNAL(triggered()), this, SLOT(gotoNextImage()));
@@ -336,6 +331,9 @@ void MainWindow::load(const QUrl &url) {
   std::cout << "Loading " << url.toString().toStdString() << std::endl;
   texdir = QFileInfo(url.toLocalFile());
   watchme(url.toLocalFile());
+  
+  workdir = texdir;
+  updateRootDirectory();
   katePart->openUrl(url); 
 }
 
@@ -362,10 +360,23 @@ void MainWindow::setupUI() {
   templateLayout = new QHBoxLayout;
   templateLayout->addWidget(templateLabel);
   templateLayout->addWidget(browseButton);
+  
+  workdirLabel = new QLineEdit("Working directory");
+  workdirLabel->setReadOnly(true);
+  workdirButton = new QPushButton("Change working directory...");
+  
+  workdirLayout = new QHBoxLayout;
+  workdirLayout->addWidget(workdirLabel);
+  workdirLayout->addWidget(workdirButton);
 
   containerLayout = new QVBoxLayout;
   splitLogView = new QSplitter(Qt::Vertical, window);
-  containerLayout->addLayout(templateLayout);
+  
+  wdtmplLayout = new QHBoxLayout;
+  wdtmplLayout->addLayout(templateLayout);
+  wdtmplLayout->addLayout(workdirLayout);
+  containerLayout->addLayout(wdtmplLayout);
+  
   splitView->addWidget(view);
 
   display = new ZoomScrollImage;
@@ -391,7 +402,7 @@ void MainWindow::setupUI() {
   logWidget->setLayout(logLayout);
   
   splitLogView->addWidget(logWidget);
-  splitLogView->setStretchFactor(0, 7);
+  splitLogView->setStretchFactor(0, 9);
   splitLogView->setStretchFactor(1, 1);
   
   containerLayout->addWidget(splitLogView);
@@ -477,4 +488,16 @@ void MainWindow::browse() {
       templateLabel->setText(filename);
       updateTemplate(filename);
   }
+}
+
+void MainWindow::chooseWorkdir() {
+    workdir = QFileInfo(QFileDialog::getExistingDirectory(this, QString("Select Working Directory"),
+                                                workdir.absolutePath(), QFileDialog::ShowDirsOnly) + "/");
+    std::cout << "Selected working directory: " << workdir.path().toStdString() << std::endl;
+    updateRootDirectory(); 
+    refresh();
+}
+
+void MainWindow::updateRootDirectory() {
+    workdirLabel->setText(workdir.absolutePath());
 }

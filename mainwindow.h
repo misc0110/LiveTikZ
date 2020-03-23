@@ -40,6 +40,7 @@ public slots:
   void documentSaved(KTextEditor::Document *document, bool saveas);
   void refresh();
   void browse();
+  void chooseWorkdir();
   void render(double scale);
   void renderFinished(int code);
   void renderFailed(QProcess::ProcessError);
@@ -63,15 +64,18 @@ private:
 
   void clearLog();
   void appendLog(QString str);
-
+  
+  void updateRootDirectory();
 
   QWidget *window;
   QSplitter *splitView;
   QHBoxLayout *mainLayout;
   QHBoxLayout *templateLayout;
+  QHBoxLayout *workdirLayout;
   QHBoxLayout *logLayout;
   QSpacerItem *spacerItem;
   QVBoxLayout *containerLayout;
+  QHBoxLayout *wdtmplLayout;
   QSplitter* splitLogView;
   QWidget *logWidget;
 
@@ -92,6 +96,9 @@ private:
   QUrl templateFile;
   QLineEdit *templateLabel;
   QPushButton *browseButton;
+  
+  QLineEdit *workdirLabel;
+  QPushButton *workdirButton;
 
   QPushButton* killButton;
 
