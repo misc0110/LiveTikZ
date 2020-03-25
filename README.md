@@ -20,7 +20,21 @@ To render the TikZ code, LiveTikZ relies on pdflatex (either directly or through
 
 # Installation
 
-LiveTikZ is a Qt application with KDE dependencies for the editor component. LiveTikZ can either be installed using the [provided Debian packages](https://github.com/misc0110/LiveTikZ/tree/master/dist) or compiled from source. 
+LiveTikZ is a Qt application with KDE dependencies for the editor component. LiveTikZ can either be installed using the PPA, [provided Debian packages](https://github.com/misc0110/LiveTikZ/tree/master/dist) or compiled from source. 
+
+## Install using PPA (recommended)
+
+First, add the public key of the PPA and the PPA URL to the package manager, and update the package manager
+
+    curl -s "https://misc0110.github.io/ppa/KEY.gpg" | sudo apt-key add -
+    sudo curl -s -o /etc/apt/sources.list.d/misc0110.list "https://misc0110.github.io/ppa/file.list"
+    sudo apt update
+
+Then, simply install LiveTikZ
+
+    sudo apt install livetikz
+
+
 
 ## Prerequisites
 
