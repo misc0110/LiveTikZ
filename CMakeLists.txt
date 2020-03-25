@@ -54,6 +54,10 @@ target_link_libraries(livetikz
   Poppler::Qt5
 )
 
+file(STRINGS "VERSION" VERSION)
+set(CMAKE_CXX_FLAGS "-DAPPVERSION='\"${VERSION}\"'")
+
+
 ########### install files ###############
 set(LIVETIKZ_DATA_INSTALL_DIR ${DATA_INSTALL_DIR}/livetikz)
 set(LIVETIKZ_TEMPLATES_INSTALL_DIR ${LIVETIKZ_DATA_INSTALL_DIR}/templates)

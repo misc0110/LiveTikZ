@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
   KAboutData aboutData(
     QStringLiteral("livetikz"),
     i18n("LiveTikZ"),
-    QStringLiteral("0.3"),
+    QStringLiteral(APPVERSION),
     i18n("A TikZ editor with live preview."),
-    KAboutLicense::GPL,
+    KAboutLicense::BSDL,
     i18n("(c) 2017-2020 Michael Schwarz"),
     "",
     "https://misc0110.net"
@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
   aboutData.setupCommandLine(&parser);
   parser.process(app);
   aboutData.processCommandLine(&parser);
+  KAboutData::setApplicationData(aboutData);
 
   MainWindow *window = new MainWindow();
   window->show();
