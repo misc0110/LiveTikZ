@@ -5,15 +5,16 @@ mkdir -pv livetikz/usr/share/doc/livetikz/
 cp build/livetikz livetikz/usr/bin
 strip livetikz/usr/bin/livetikz
 mkdir -p livetikz/DEBIAN
-sed "s/%VERSION%/0.3/" docs/debian-control > livetikz/DEBIAN/control
+sed "s/%VERSION%/$(cat VERSION)/" docs/debian-control > livetikz/DEBIAN/control
 echo "initial version" > livetikz/usr/share/doc/livetikz/changelog
-echo "" > livetikz/usr/share/doc/livetikz/copyright
-gzip -c -9 livetikz/usr/share/doc/livetikz/changelog > livetikz/usr/share/doc/livetikz/changelog.gz
+echo "Copyright 2020, Michael Schwarz" > livetikz/usr/share/doc/livetikz/copyright
+gzip -c -9 -n livetikz/usr/share/doc/livetikz/changelog > livetikz/usr/share/doc/livetikz/changelog.gz
 rm livetikz/usr/share/doc/livetikz/changelog
+chmod -R 0755 livetikz/usr
 chmod 0644 livetikz/usr/share/doc/livetikz/copyright
 chmod 0644 livetikz/usr/share/doc/livetikz/changelog.gz
-chmod -R 0755 livetikz/usr
 chown -R root:root livetikz/
 dpkg-deb --build livetikz
 rm -rf livetikz
 lintian livetikz.deb 
+mv livetikz.deb dist/livetikz_$(cat VERSION)_amd64.deb
