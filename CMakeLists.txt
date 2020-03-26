@@ -69,3 +69,4 @@ install(FILES data/livetikz.png DESTINATION ${ICON_INSTALL_DIR})
 install(FILES data/templates/template_example.pgs
 	            data/templates/template_beamer.pgs
         DESTINATION ${LIVETIKZ_TEMPLATES_INSTALL_DIR})
+install(FILES docs/livetikz.1 DESTINATION ${LIVETIKZ_DATA_INSTALL_DIR}/man/man1)
