@@ -263,7 +263,11 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   dir = NULL;
   templateFile = QUrl(settings.value("template", "").toString());
   updateTemplate(templateFile.path());
-  templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
+  if(templateFile.url(QUrl::PreferLocalFile) == "") {
+    templateLabel->setText("<internal template>");
+  } else {
+    templateLabel->setText(templateFile.url(QUrl::PreferLocalFile));
+  }
   
   texfileWatcher = NULL;
 
@@ -493,7 +497,7 @@ void MainWindow::updateTemplate(const QString& filename) {
 }
 
 void MainWindow::browse() {
-  QUrl newTemplateFile = QFileDialog::getOpenFileUrl(this, QString("Open template"));
+  QUrl newTemplateFile = QFileDialog::getOpenFileUrl(this, QString("Open template"), QUrl::fromLocalFile("/usr/share/livetikz/"));
   if (newTemplateFile.fileName() != "") {
       QString filename = newTemplateFile.url(QUrl::PreferLocalFile);
       templateLabel->setText(filename);
