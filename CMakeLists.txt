@@ -55,7 +55,7 @@ target_link_libraries(livetikz
 )
 
 file(STRINGS "VERSION" VERSION)
-set(CMAKE_CXX_FLAGS "-DAPPVERSION='\"${VERSION}\"'")
+set(CMAKE_CXX_FLAGS "-DAPPVERSION='\"${VERSION}\"' -std=c++11")
 
 
 ########### install files ###############
