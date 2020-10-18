@@ -74,4 +74,4 @@ script:
     - cd build
     - cmake ..
     - make -j
-    - xvfb-run ./livetikz --version | grep -c livetikz
+    - xvfb-run --auto-servernum --server-num=1 ./livetikz --version | grep -c livetikz
