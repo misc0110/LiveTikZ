@@ -54,6 +54,7 @@ public slots:
   void gotoPreviousImage();
   void gotoNextImage();
   void updateTemplate(const QString& filename);
+  void exportPNG();
 
 private:
   void setupActions();
@@ -68,7 +69,11 @@ private:
   void appendLog(QString str);
   
   void updateRootDirectory();
+  
+  bool isEmptyLine(QImage& img, int line);
+  bool isEmptyCol(QImage& img, int col);
 
+  QImage image;
   QWidget *window;
   QSplitter *splitView;
   QHBoxLayout *mainLayout;
@@ -112,6 +117,7 @@ private:
   
   QAction* nextImage;
   QAction* prevImage;
+  QAction* exportImgPng;
   
   int currentPage;
   bool usersaved;

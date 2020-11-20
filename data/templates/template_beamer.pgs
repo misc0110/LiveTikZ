@@ -1,4 +1,5 @@
 \documentclass{beamer}
+\beamertemplatenavigationsymbolsempty
 \usepackage{tikz}
 \usepackage{color}
 \usepackage{amssymb}

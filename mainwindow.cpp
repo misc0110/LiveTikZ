@@ -63,6 +63,49 @@ void MainWindow::gotoPreviousImage() {
   }
 }
 
+
+bool MainWindow::isEmptyLine(QImage& img, int line) {
+    QColor white(255, 255, 255, 255);
+    for(int x = 0; x < img.width(); x++) {
+        if(img.pixelColor(x, line) != white) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool MainWindow::isEmptyCol(QImage& img, int col) {
+    QColor white(255, 255, 255, 255);
+    for(int y = 0; y < img.height(); y++) {
+        if(img.pixelColor(col, y) != white) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void MainWindow::exportPNG() {
+    int top = 0;
+    while(isEmptyLine(image, top) && top < image.height() - 1) top++;
+    if(top > 0) top--;
+    int bottom = image.height() - 1;
+    while(isEmptyLine(image, bottom) && bottom > 0) bottom--;
+    if(bottom < image.height() - 1) bottom++;
+    int left = 0;
+    while(isEmptyCol(image, left) && left < image.width() - 1) left++;
+    if(left > 0) left--;
+    int right = image.width() - 1;
+    while(isEmptyCol(image, right) && right > 0) right--; 
+    if(right < image.width() - 1) right++;
+    
+    QImage crop;
+    crop = image.copy(left, top, right - left + 1, bottom - top + 1); 
+    QString fname = QFileDialog::getSaveFileUrl().toLocalFile();
+    std::cout << "Export as " << fname.toStdString() << std::endl;
+    crop.save(fname, "png", -1);
+
+}
+
 void MainWindow::render(double scale) {
   if (currentDoc && display) {
     if(currentPage >= currentDoc->numPages()) {
@@ -74,8 +117,9 @@ void MainWindow::render(double scale) {
     prevImage->setVisible(currentDoc->numPages() > 1);
     nextImage->setVisible(currentDoc->numPages() > 1);
     
-    QImage image = currentDoc->page(currentPage)->renderToImage(scale * physicalDpiX(), scale * physicalDpiY());
+    image = currentDoc->page(currentPage)->renderToImage(scale * physicalDpiX(), scale * physicalDpiY());
     display->setImage(image);
+ 
   }
 }
 
@@ -284,6 +328,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   
   connect(prevImage, SIGNAL(triggered()), this, SLOT(gotoPreviousImage()));
   connect(nextImage, SIGNAL(triggered()), this, SLOT(gotoNextImage()));
+  connect(exportImgPng, SIGNAL(triggered()), this, SLOT(exportPNG()));
 
   connect((QObject *)doc, SIGNAL(textChanged(KTextEditor::Document *)), this,
           SLOT(textChanged(KTextEditor::Document *)));
@@ -426,6 +471,8 @@ void MainWindow::setupUI() {
   setCentralWidget(window);
   setupGUI(ToolBar | Keys | StatusBar | Save);
   createGUI(katePart);
+  
+  exportImgPng = toolBar()->addAction(QIcon::fromTheme("image"), "Save as PNG");
   
   toolBar()->addSeparator();
   prevImage = toolBar()->addAction(QIcon::fromTheme("go-previous"), "Previous image");
