@@ -103,7 +103,37 @@ void MainWindow::exportPNG() {
     QString fname = QFileDialog::getSaveFileUrl().toLocalFile();
     std::cout << "Export as " << fname.toStdString() << std::endl;
     crop.save(fname, "png", -1);
+    appendLog(QString("Exported as ") + fname);
+}
 
+void MainWindow::exportPDF() {
+    QString pdf(getFilePath(dir, "livetikz_preview.pdf"));
+    QString pdf_crop(getFilePath(dir, "crop.pdf"));
+    
+    QStringList arguments;
+    arguments << pdf;
+    arguments << pdf_crop;
+    
+    std::cout << "Crop " << pdf.toStdString() << " to " << pdf_crop.toStdString() << std::endl;
+    
+    QProcess* crop = new QProcess(this);
+    crop->setWorkingDirectory(workdir.absolutePath());
+    crop->start(QString("pdfcrop"), arguments);
+    crop->waitForFinished();
+    
+    QString fname = QFileDialog::getSaveFileUrl().toLocalFile();
+    std::cout << "Export as " << fname.toStdString() << std::endl;
+
+    QFile::remove(fname);
+    if(QFile::exists(pdf_crop)) {
+        QFile::copy(pdf_crop, fname);
+        appendLog(QString("Exported as ") + fname);
+    } else {
+        std::cout << "Install pdfcrop from texlive-extra-utils to get a cropped PDF" << std::endl;
+        QFile::copy(pdf, fname);
+        appendLog(QString("Exported as ") + fname);
+        appendLog("Install pdfcrop from texlive-extra-utils to get a cropped PDF");
+    }
 }
 
 void MainWindow::render(double scale) {
@@ -329,6 +359,7 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
   connect(prevImage, SIGNAL(triggered()), this, SLOT(gotoPreviousImage()));
   connect(nextImage, SIGNAL(triggered()), this, SLOT(gotoNextImage()));
   connect(exportImgPng, SIGNAL(triggered()), this, SLOT(exportPNG()));
+  connect(exportImgPdf, SIGNAL(triggered()), this, SLOT(exportPDF()));
 
   connect((QObject *)doc, SIGNAL(textChanged(KTextEditor::Document *)), this,
           SLOT(textChanged(KTextEditor::Document *)));
@@ -473,6 +504,7 @@ void MainWindow::setupUI() {
   createGUI(katePart);
   
   exportImgPng = toolBar()->addAction(QIcon::fromTheme("image"), "Save as PNG");
+  exportImgPdf = toolBar()->addAction(QIcon::fromTheme("x-office-document"), "Save as PDF");
   
   toolBar()->addSeparator();
   prevImage = toolBar()->addAction(QIcon::fromTheme("go-previous"), "Previous image");

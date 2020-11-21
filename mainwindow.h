@@ -55,6 +55,7 @@ public slots:
   void gotoNextImage();
   void updateTemplate(const QString& filename);
   void exportPNG();
+  void exportPDF();
 
 private:
   void setupActions();
@@ -118,6 +119,7 @@ private:
   QAction* nextImage;
   QAction* prevImage;
   QAction* exportImgPng;
+  QAction* exportImgPdf;
   
   int currentPage;
   bool usersaved;

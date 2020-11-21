@@ -4,28 +4,6 @@ compiler: gcc
 jobs:
     include:
         - os: linux
-          dist: xenial
-          arch: amd64
-          services:
-            - xvfb
-          addons:
-              apt:
-                  update: true
-                  packages:
-                      - build-essential
-                      - gcc
-                      - cmake
-                      - extra-cmake-modules
-                      - qt5-default
-                      - libkf5parts-dev
-                      - libkf5texteditor-dev
-                      - libpoppler-qt5-dev
-                      - libpoppler-cpp-dev
-                      - libpoppler-glib-dev
-                      - kdelibs5-dev
-                      - ktexteditor-katepart
-                      - gettext
-        - os: linux
           dist: bionic
           arch: amd64
           services:
