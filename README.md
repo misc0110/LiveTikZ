@@ -1,5 +1,4 @@
 # LiveTikZ
-[![Build Status](https://travis-ci.com/misc0110/LiveTikZ.svg?branch=master)](https://travis-ci.com/misc0110/LiveTikZ)
 
 A live preview for TikZ drawings.
 
