@@ -44,13 +44,11 @@ The following packages are required to compile from source:
 * build-essential
 * cmake
 * extra-cmake-modules
-* qt5-default
 * libkf5parts-dev
 * libkf5texteditor-dev
 * libpoppler-qt5-dev
 * libpoppler-cpp-dev
 * libpoppler-glib-dev
-* kdelibs5-dev
 * ktexteditor-katepart
 * gettext
 
