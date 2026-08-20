@@ -23,9 +23,11 @@
 #include <QTimer>
 #include <QMessageLogger>
 #include <QCloseEvent>
+#include <QEvent>
 #include <KParts/MainWindow>
 #include <KTextEditor/Document>
 #include <KTextEditor/View>
+#include <KTextEditor/CodeCompletionInterface>
 #include <poppler-qt5.h>
 #include <ZoomScrollImage.h>
 
@@ -79,6 +81,7 @@ private:
 
 protected:
   void closeEvent(QCloseEvent *event) override;
+  bool eventFilter(QObject *watched, QEvent *event) override;
 
   QImage image;
   QWidget *window;

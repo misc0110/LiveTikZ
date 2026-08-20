@@ -8,6 +8,11 @@
 #include <QUrl>
 #include <KToolBar>
 #include <QMessageBox>
+#include <QKeyEvent>
+#include <QRegularExpression>
+#include <QSet>
+#include <QTextStream>
+#include <KTextEditor/CodeCompletionModel>
 
 #include <QApplication>
 #include <QTemporaryDir>
@@ -20,6 +25,90 @@
 
 #include <QtCore/QDebug>
 #undef QT_NO_DEBUG
+
+namespace {
+
+class LatexCompletionModel : public KTextEditor::CodeCompletionModel {
+public:
+  explicit LatexCompletionModel(QObject *parent)
+      : KTextEditor::CodeCompletionModel(parent) {}
+
+  void updateForDocument(const QString &text) {
+    const bool pgfplotsEnabled = text.contains(QStringLiteral("pgfplots"));
+    if (initialized && pgfplotsEnabled == hasPgfplots) {
+      return;
+    }
+
+    QSet<QString> commands;
+    loadFile(QStringLiteral(":/completion/latex.cwl"), commands);
+    /* LiveTikZ documents use TikZ through their template, so these commands
+     * are useful even when the package declaration is in the template. */
+    loadFile(QStringLiteral(":/completion/tikz.cwl"), commands);
+    if (pgfplotsEnabled) {
+      loadFile(QStringLiteral(":/completion/pgfplots.cwl"), commands);
+    }
+
+    beginResetModel();
+    entries = commands.values();
+    entries.sort();
+    endResetModel();
+    hasPgfplots = pgfplotsEnabled;
+    initialized = true;
+  }
+
+  QModelIndex index(int row, int column,
+                    const QModelIndex &parent = QModelIndex()) const override {
+    if (parent.isValid() || row < 0 || row >= entries.size() ||
+        column < 0 || column >= ColumnCount) {
+      return QModelIndex();
+    }
+    return createIndex(row, column);
+  }
+
+  QModelIndex parent(const QModelIndex &) const override { return QModelIndex(); }
+  int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+    return parent.isValid() ? 0 : entries.size();
+  }
+  int columnCount(const QModelIndex & = QModelIndex()) const override { return ColumnCount; }
+
+  QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
+    if (!index.isValid() || index.row() < 0 || index.row() >= entries.size()) {
+      return QVariant();
+    }
+    if (role == Qt::DisplayRole && index.column() == Name) {
+      return entries.at(index.row());
+    }
+    return QVariant();
+  }
+
+private:
+  static void loadFile(const QString &path, QSet<QString> &commands) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+      return;
+    }
+
+    QTextStream stream(&file);
+    const QRegularExpression commandExpression(QStringLiteral("^\\\\([A-Za-z@]+)"));
+    while (!stream.atEnd()) {
+      const QString line = stream.readLine().trimmed();
+      if (line.isEmpty() || line.startsWith(QLatin1Char('#')) ||
+          line.startsWith(QLatin1Char('%'))) {
+        continue;
+      }
+      const QRegularExpressionMatch match = commandExpression.match(line);
+      if (match.hasMatch()) {
+        commands.insert(match.captured(1));
+      }
+    }
+  }
+
+  QStringList entries;
+  bool hasPgfplots = false;
+  bool initialized = false;
+};
+
+}
 
 
 QString getFilePath(QTemporaryDir* dir, const char* file) {
@@ -598,6 +687,21 @@ void MainWindow::setupEditor() {
     if (katePart) {
       view = ((KTextEditor::View *)katePart->widget());
       doc = view->document();
+      KTextEditor::CodeCompletionInterface *completion =
+          qobject_cast<KTextEditor::CodeCompletionInterface *>(view);
+      if (completion) {
+        LatexCompletionModel *completionModel = new LatexCompletionModel(view);
+        completionModel->updateForDocument(doc->text());
+        connect(doc, &KTextEditor::Document::textChanged,
+                [completionModel](KTextEditor::Document *document) {
+                  completionModel->updateForDocument(document->text());
+                });
+        completion->registerCompletionModel(completionModel);
+        completion->setAutomaticInvocationEnabled(true);
+      }
+      /* KatePart delivers key events through its internal editor child in
+       * some versions, rather than through the View widget itself. */
+      qApp->installEventFilter(this);
     } else {
       qDebug() << "katePart is NULL";
       KMessageBox::error(this, "Could not create editor");
@@ -608,6 +712,36 @@ void MainWindow::setupEditor() {
     KMessageBox::error(this, "Service katepart not found - please install kate");
     qApp->quit();
   }
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
+  QWidget *watchedWidget = qobject_cast<QWidget *>(watched);
+  const bool isEditorEvent = watchedWidget &&
+      (watchedWidget == view || view->isAncestorOf(watchedWidget));
+  if (isEditorEvent && event->type() == QEvent::KeyPress) {
+    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+    if ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) &&
+        keyEvent->modifiers() == Qt::NoModifier) {
+      const KTextEditor::Cursor cursor = view->cursorPosition();
+      const QString line = doc->line(cursor.line());
+      if (cursor.column() == line.size()) {
+        const QRegularExpression beginExpression(
+            QStringLiteral("^([\\t ]*)\\\\begin\\{([^{}]+)\\}[\\t ]*$"));
+        const QRegularExpressionMatch match = beginExpression.match(line);
+        if (match.hasMatch()) {
+          const QString indentation = match.captured(1);
+          const QString environment = match.captured(2);
+          doc->insertText(cursor, QStringLiteral("\n") + indentation +
+                                      QStringLiteral("\\end{") + environment +
+                                      QStringLiteral("}"));
+          view->setCursorPosition(KTextEditor::Cursor(cursor.line() + 1,
+                                                       indentation.size()));
+          return true;
+        }
+      }
+    }
+  }
+  return KParts::MainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::load() { load(QFileDialog::getOpenFileUrl()); }

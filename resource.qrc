@@ -1,5 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>logo.png</file>
+    <file alias="completion/latex.cwl">data/completion/latex.cwl</file>
+    <file alias="completion/tikz.cwl">data/completion/tikz.cwl</file>
+    <file alias="completion/pgfplots.cwl">data/completion/pgfplots.cwl</file>
 </qresource>
 </RCC> 
