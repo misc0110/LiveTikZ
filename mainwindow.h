@@ -22,6 +22,7 @@
 #include <QTextCursor>
 #include <QTimer>
 #include <QMessageLogger>
+#include <QCloseEvent>
 #include <KParts/MainWindow>
 #include <KTextEditor/Document>
 #include <KTextEditor/View>
@@ -39,6 +40,8 @@ public slots:
   void load(const QUrl &url);
   void load();
   void textChanged(KTextEditor::Document *document);
+  void documentModifiedChanged(KTextEditor::Document *document);
+  void documentAboutToSave(KTextEditor::Document *document);
   void documentSaved(KTextEditor::Document *document, bool saveas);
   void refresh();
   void browse();
@@ -73,6 +76,9 @@ private:
   
   bool isEmptyLine(QImage& img, int line);
   bool isEmptyCol(QImage& img, int col);
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
 
   QImage image;
   QWidget *window;

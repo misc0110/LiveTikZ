@@ -7,6 +7,7 @@
 #include <KStandardAction>
 #include <QUrl>
 #include <KToolBar>
+#include <QMessageBox>
 
 #include <QApplication>
 #include <QTemporaryDir>
@@ -44,6 +45,20 @@ void MainWindow::documentSaved(KTextEditor::Document *document, bool saveas) {
   (void)document;
   (void)saveas;
   qDebug() << "Document saved";
+  usersaved = true;
+}
+
+void MainWindow::documentModifiedChanged(KTextEditor::Document *document) {
+  if (document == doc) {
+    setWindowModified(document->isModified());
+  }
+}
+
+void MainWindow::documentAboutToSave(KTextEditor::Document *document) {
+  (void)document;
+  /* QFileSystemWatcher may report the replacement of the file before the
+   * documentSaved signal is delivered.  Mark the write as intentional first
+   * so we do not reload the document while it is being saved. */
   usersaved = true;
 }
 
@@ -194,8 +209,6 @@ void MainWindow::compile() {
   //connect(renderProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(renderFailed(QProcess::ProcessError)));
   connect(renderProcess, SIGNAL(readyReadStandardError()), this, SLOT(updateLog()));
   connect(renderProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateLog()));
-  connect(&templateWatcher, SIGNAL(fileChanged(const QString&)), this, SLOT(handleTemplateChanged(const QString&)));
-
   connect(killButton, SIGNAL(clicked()), renderProcess, SLOT(kill()));
   killButton->setVisible(true);
 }
@@ -210,7 +223,7 @@ void MainWindow::refresh() {
     //~ QFile file(dir->filePath("_livetikz_preview.tex"));
     QFile file(getFilePath(dir, "_livetikz_preview.tex"));
 
-    if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+    if (file.open(QIODevice::ReadWrite | QIODevice::Text | QIODevice::Truncate)) {
       QTextStream out(&file);
 
       QFile inputFile(templateFile.url(QUrl::PreferLocalFile));
@@ -289,6 +302,18 @@ void MainWindow::renderFailed(QProcess::ProcessError) {
 
 
 void MainWindow::renderFinished(int code) {
+  QProcess *finishedProcess = qobject_cast<QProcess *>(sender());
+  if (!finishedProcess) {
+    finishedProcess = renderProcess;
+  }
+
+  /* Clear this before processing the result.  refresh() can be queued by a
+   * save/edit while the compiler is finishing, and must be allowed to start
+   * the next compile. */
+  if (finishedProcess == renderProcess) {
+    renderProcess = NULL;
+  }
+
   if (code == 0) {
     appendLog("Done!\n");
     qDebug() << "Done";
@@ -299,7 +324,12 @@ void MainWindow::renderFinished(int code) {
 
   killButton->setVisible(false);
   
-  if(!dir) return;
+  if(!dir) {
+    if (finishedProcess) {
+      finishedProcess->deleteLater();
+    }
+    return;
+  }
   
   delete currentDoc;
   currentDoc = NULL;
@@ -323,10 +353,12 @@ void MainWindow::renderFinished(int code) {
     }
   //~ }
 
-  renderProcess = NULL;
+  if (finishedProcess) {
+    finishedProcess->deleteLater();
+  }
 }
 
-MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0) {
+MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0), usersaved(true) {
   QSettings settings;
 
   setupEditor();
@@ -363,10 +395,16 @@ MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0)
 
   connect((QObject *)doc, SIGNAL(textChanged(KTextEditor::Document *)), this,
           SLOT(textChanged(KTextEditor::Document *)));
+  connect((QObject *)doc, SIGNAL(modifiedChanged(KTextEditor::Document *)), this,
+          SLOT(documentModifiedChanged(KTextEditor::Document *)));
   connect(templateLabel, SIGNAL(textEdited(const QString&)), this, 
           SLOT(updateTemplate(const QString&)));
   connect((QObject *)doc, SIGNAL(documentSavedOrUploaded(KTextEditor::Document *, bool)), this,
           SLOT(documentSaved(KTextEditor::Document *, bool)));
+  connect((QObject *)doc, SIGNAL(aboutToSave(KTextEditor::Document *)), this,
+          SLOT(documentAboutToSave(KTextEditor::Document *)));
+  connect(&templateWatcher, SIGNAL(fileChanged(const QString&)), this,
+          SLOT(handleTemplateChanged(const QString&)));
 }
 
 void MainWindow::showCompilerSelection() {
@@ -391,6 +429,32 @@ MainWindow::~MainWindow() {
   if (texfileWatcher) {
     delete texfileWatcher;
     texfileWatcher = NULL;
+  }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+  if (!doc || !doc->isModified()) {
+    event->accept();
+    return;
+  }
+
+  const QMessageBox::StandardButton answer = QMessageBox::warning(
+      this,
+      tr("Unsaved document"),
+      tr("The document has unsaved changes. Do you want to save them before closing?"),
+      QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+      QMessageBox::Save);
+
+  if (answer == QMessageBox::Save) {
+    if (doc->documentSave()) {
+      event->accept();
+    } else {
+      event->ignore();
+    }
+  } else if (answer == QMessageBox::Discard) {
+    event->accept();
+  } else {
+    event->ignore();
   }
 }
 
@@ -423,7 +487,9 @@ void MainWindow::load(const QUrl &url) {
   
   workdir = texdir;
   updateRootDirectory();
+  setWindowTitle(url.fileName() + QStringLiteral(" - LiveTikZ[*]"));
   katePart->openUrl(url); 
+  setWindowModified(doc->isModified());
 }
 
 void MainWindow::setupActions() {
@@ -500,6 +566,8 @@ void MainWindow::setupUI() {
 
   window->setLayout(mainLayout);
   setCentralWidget(window);
+  setWindowTitleHandling(false);
+  setWindowTitle(QStringLiteral("LiveTikZ[*]"));
   setupGUI(ToolBar | Keys | StatusBar | Save);
   createGUI(katePart);
   
