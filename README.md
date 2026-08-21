@@ -17,7 +17,7 @@ LiveTikZ uses KDEs [KatePart](https://kate-editor.org/about-katepart/) as powerf
 * Block selection mode
 * VI Input mode
 
-To render the TikZ code, LiveTikZ relies on pdflatex (either directly or through the [latexrun](https://github.com/aclements/latexrun) wrapper) to compile the code and [Poppler](https://github.com/danigm/poppler) to render the PDF file. 
+To render the TikZ code, LiveTikZ uses the packaged [latexrun](https://github.com/misc0110/latexrun) wrapper by default. The compiler can be changed permanently from the `LiveTikZ > Compiler` menu to `pdflatex`, `xelatex`, or `lualatex`. [Poppler](https://github.com/danigm/poppler) renders the resulting PDF.
 
 # Installation
 

@@ -1,6 +1,5 @@
+cmake_minimum_required(VERSION 3.16)
 project(livetikz)
-
-cmake_minimum_required(VERSION 3.5)
 set(QT_MIN_VERSION "5.3.0")
 set(KF5_MIN_VERSION "5.2.0")
 set(CMAKE_AUTORCC ON)
@@ -69,4 +68,6 @@ install(FILES data/livetikz.png DESTINATION ${ICON_INSTALL_DIR})
 install(FILES data/templates/template_example.pgs
 	            data/templates/template_beamer.pgs
         DESTINATION ${LIVETIKZ_TEMPLATES_INSTALL_DIR})
+install(PROGRAMS data/latexrun DESTINATION ${LIVETIKZ_DATA_INSTALL_DIR})
+install(FILES data/latexrun.LICENSE DESTINATION ${DATA_INSTALL_DIR}/doc/livetikz)
 install(FILES docs/livetikz.1 DESTINATION ${LIVETIKZ_DATA_INSTALL_DIR}/man/man1)

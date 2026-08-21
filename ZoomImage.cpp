@@ -5,7 +5,7 @@ ZoomImage::ZoomImage() { scale = 1; }
 
 void ZoomImage::wheelEvent(QWheelEvent *event) {
   if (event->modifiers() & Qt::ControlModifier) {
-    if (event->delta() > 0) {
+    if (event->angleDelta().y() > 0) {
       scale *= 1.15;
     } else {
       scale /= 1.15;

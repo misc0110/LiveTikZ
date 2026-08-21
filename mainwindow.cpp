@@ -4,12 +4,15 @@
 #include <QFileDialog>
 #include <KMessageBox>
 #include <KService>
+#include <KPluginFactory>
 #include <KStandardAction>
 #include <QUrl>
 #include <KToolBar>
 #include <QMessageBox>
 #include <QKeyEvent>
 #include <QRegularExpression>
+#include <QJsonDocument>
+#include <QPluginLoader>
 #include <QSet>
 #include <QTextStream>
 #include <KTextEditor/CodeCompletionModel>
@@ -18,6 +21,7 @@
 #include <QTemporaryDir>
 #include <QTemporaryFile>
 #include <QFile>
+#include <QDir>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -116,6 +120,21 @@ QString getFilePath(QTemporaryDir* dir, const char* file) {
   path.append("/");
   path.append(file);
   return path;
+}
+
+QString packagedLatexrunPath() {
+  const QString applicationDir = QCoreApplication::applicationDirPath();
+  const QStringList candidates = QStringList()
+      << QDir(applicationDir).filePath(QStringLiteral("../share/livetikz/latexrun"))
+      << QDir(applicationDir).filePath(QStringLiteral("data/latexrun"))
+      << QDir::current().filePath(QStringLiteral("data/latexrun"));
+
+  for (const QString &candidate : candidates) {
+    if (QFileInfo(candidate).isFile() && QFileInfo(candidate).isExecutable()) {
+      return QFileInfo(candidate).absoluteFilePath();
+    }
+  }
+  return QStringLiteral("latexrun");
 }
 
 inline QDebug operator<<(QDebug dbg, const std::string& str)
@@ -260,13 +279,18 @@ void MainWindow::render(double scale) {
 void MainWindow::compile() {
   usersaved = false;
   QSettings settings;
-  QString program = settings.value("compiler", "pdflatex").toString();
+  QString compiler = settings.value("compiler", "latexrun").toString();
+  QString program = compiler;
 
   QStringList arguments;
   QTemporaryDir tmpdir;
   tmpdir.setAutoRemove(true);
   
-  if (program == "pdflatex") {
+  if (compiler == "latexrun") {
+    program = packagedLatexrunPath();
+  }
+
+  if (compiler == "pdflatex" || compiler == "xelatex" || compiler == "lualatex") {
     arguments << "-halt-on-error";
   }
   if(!dir || dir->path() == "") {
@@ -280,7 +304,14 @@ void MainWindow::compile() {
 
   QString odir("--output-directory=");
   odir.append(dir->path());
-  arguments << odir;
+  if (compiler == "latexrun") {
+    arguments << "-o" << getFilePath(dir, "_livetikz_preview.pdf")
+              << "-O" << getFilePath(dir, "latex.out")
+              << "--latex-cmd" << "pdflatex"
+              << "--latex-args=-halt-on-error -output-directory=" + dir->path();
+  } else {
+    arguments << odir;
+  }
 
   arguments << getFilePath(dir, "_livetikz_preview.tex");
 
@@ -290,15 +321,18 @@ void MainWindow::compile() {
   renderProcess = new QProcess(this);
   renderProcess->setWorkingDirectory(workdir.absolutePath());
   clearLog();
-  renderProcess->start(program, arguments);
+  compileIndicatorOn = false;
+  compileIndicator->setVisible(true);
+  compileIndicatorTimer->start(450);
 
   log->setText("Compiling...");
   renderOutput = "";
   connect(renderProcess, SIGNAL(finished(int)), this, SLOT(renderFinished(int)));
-  //connect(renderProcess, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(renderFailed(QProcess::ProcessError)));
+  connect(renderProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(renderFailed(QProcess::ProcessError)));
   connect(renderProcess, SIGNAL(readyReadStandardError()), this, SLOT(updateLog()));
   connect(renderProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateLog()));
   connect(killButton, SIGNAL(clicked()), renderProcess, SLOT(kill()));
+  renderProcess->start(program, arguments);
   killButton->setVisible(true);
 }
 
@@ -318,9 +352,12 @@ void MainWindow::refresh() {
       QFile inputFile(templateFile.url(QUrl::PreferLocalFile));
       if (inputFile.exists() && inputFile.open(QIODevice::ReadOnly)) {
         QTextStream in(&inputFile);
+        int generatedLine = 0;
         while (!in.atEnd()) {
           QString line = in.readLine();
+          generatedLine++;
           if (line.trimmed() == "<>") {
+            templateInsertionLine = generatedLine;
             out << doc->text() << "\n";
           } else {
             out << line << "\n";
@@ -341,6 +378,7 @@ void MainWindow::refresh() {
             << "\\usetikzlibrary{shapes.arrows}\n"
             << "\\usetikzlibrary{pgfplots.groupplots}\n"
             << "\\pgfplotsset{compat=1.13}\n";
+        templateInsertionLine = 15;
         out << "\\begin{document}\n";
         out << doc->text() << "\n";
         out << "\\end{document}\n";
@@ -386,7 +424,16 @@ void MainWindow::updateLog() {
 void MainWindow::renderFailed(QProcess::ProcessError) {
     appendLog("Failed to execute compiler\n");
     qDebug() << "Could not compile";
+    compileIndicatorTimer->stop();
+    compileIndicator->setVisible(false);
     renderFinished(1);
+}
+
+void MainWindow::updateCompileIndicator() {
+    compileIndicatorOn = !compileIndicatorOn;
+    compileIndicator->setStyleSheet(compileIndicatorOn
+        ? QStringLiteral("QLabel { color: #d64545; }")
+        : QStringLiteral("QLabel { color: #e8a33d; }"));
 }
 
 
@@ -403,12 +450,16 @@ void MainWindow::renderFinished(int code) {
     renderProcess = NULL;
   }
 
+  compileIndicatorTimer->stop();
+  compileIndicator->setVisible(false);
+
   if (code == 0) {
     appendLog("Done!\n");
     qDebug() << "Done";
   } else {
     appendLog("Error!\n");
     qDebug() << "Error: " << code;
+    showCompilerErrorLine();
   }
 
   killButton->setVisible(false);
@@ -447,7 +498,33 @@ void MainWindow::renderFinished(int code) {
   }
 }
 
-MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0), usersaved(true) {
+void MainWindow::showCompilerErrorLine() {
+  const QRegularExpression lineExpression(QStringLiteral("(?:^|\\n).*?l\\.(\\d+)"));
+  const QRegularExpressionMatch match = lineExpression.match(renderOutput);
+  if (!match.hasMatch() || templateInsertionLine <= 0) {
+    return;
+  }
+
+  const int compilerLine = match.captured(1).toInt();
+  const int editorLine = compilerLine - templateInsertionLine + 1;
+  if (editorLine < 1 || editorLine > doc->lines()) {
+    appendLog(QString("Compiler error is in generated template line %1.\n")
+                  .arg(compilerLine));
+    return;
+  }
+
+  const int lineIndex = editorLine - 1;
+  const int lineLength = doc->line(lineIndex).size();
+  view->setCursorPosition(KTextEditor::Cursor(lineIndex, 0));
+  view->setSelection(KTextEditor::Range(KTextEditor::Cursor(lineIndex, 0),
+                                         KTextEditor::Cursor(lineIndex, lineLength)));
+  view->setFocus();
+  appendLog(QString("Compiler error: editor line %1 (generated template line %2).\n")
+                .arg(editorLine)
+                .arg(compilerLine));
+}
+
+MainWindow::MainWindow() : currentDoc(NULL), renderProcess(NULL), currentPage(0), usersaved(true), templateInsertionLine(0), compileIndicatorOn(false) {
   QSettings settings;
 
   setupEditor();
@@ -500,10 +577,14 @@ void MainWindow::showCompilerSelection() {
   QStringList items;
   items << tr("pdflatex") << tr("latexrun") << tr("xelatex") << tr("lualatex");
 
+  QSettings settings;
+  const QString current = settings.value("compiler", "latexrun").toString();
+  const int currentIndex = items.indexOf(current);
+
   bool ok;
-  QString item = QInputDialog::getItem(this, tr("LaTeX compiler"), tr("Compiler:"), items, 0, false, &ok);
+  QString item = QInputDialog::getItem(this, tr("LaTeX compiler"), tr("Compiler:"), items,
+                                       currentIndex < 0 ? 0 : currentIndex, false, &ok);
   if (ok && !item.isEmpty()) {
-    QSettings settings;
     settings.setValue("compiler", item);
   }
 }
@@ -637,10 +718,21 @@ void MainWindow::setupUI() {
   splitLogView->addWidget(splitView);
   
   logLayout->addWidget(log);
-  
+
   killButton = new QPushButton("Abort compilation");
   killButton->setVisible(false);
-  logLayout->addWidget(killButton);
+
+  compileIndicator = new QLabel(QStringLiteral("● Compiling"));
+  compileIndicator->setToolTip(QStringLiteral("A figure compilation is in progress"));
+  compileIndicator->setVisible(false);
+  compileIndicatorTimer = new QTimer(this);
+  compileIndicatorTimer->setInterval(450);
+  connect(compileIndicatorTimer, SIGNAL(timeout()), this, SLOT(updateCompileIndicator()));
+
+  QVBoxLayout *compileControlsLayout = new QVBoxLayout;
+  compileControlsLayout->addWidget(killButton);
+  compileControlsLayout->addWidget(compileIndicator);
+  logLayout->addLayout(compileControlsLayout);
   
   logWidget = new QWidget();
   logWidget->setLayout(logLayout);
@@ -669,8 +761,7 @@ void MainWindow::setupUI() {
   prevImage->setVisible(false);
   nextImage->setVisible(false);
 
-  QDesktopWidget widget;
-  QRect mainScreenSize = widget.availableGeometry(widget.primaryScreen());
+  QRect mainScreenSize = QGuiApplication::primaryScreen()->availableGeometry();
   this->resize(mainScreenSize.width() * 0.7, mainScreenSize.height() * 0.7);
   log->resize(mainScreenSize.width() * 0.7, mainScreenSize.height() * 0.7 * 0.1);
   display->resize(mainScreenSize.width() * 0.7 * 0.5, mainScreenSize.height() * 0.7 * 1);
@@ -683,7 +774,16 @@ void MainWindow::setupEditor() {
 
   KService::Ptr service = KService::serviceByDesktopName("katepart");
   if (service) {
-    katePart = service->createInstance<KParts::ReadWritePart>(0);
+    QPluginLoader loader(service->library());
+    const KPluginMetaData metadata(loader);
+    const KPluginFactory::Result<KPluginFactory> factory = KPluginFactory::loadFactory(metadata);
+    if (factory.plugin) {
+      QVariantList args;
+      args << QJsonDocument(metadata.rawData()).toVariant().toMap();
+      katePart = factory.plugin->create<KParts::ReadWritePart>(nullptr, args);
+    } else {
+      katePart = nullptr;
+    }
     if (katePart) {
       view = ((KTextEditor::View *)katePart->widget());
       doc = view->document();

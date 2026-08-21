@@ -2,7 +2,7 @@
 #define LIVETIKZ_H
 
 #include <QMenuBar>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QFileDialog>
 #include <QScrollBar>
 #include <QHBoxLayout>
@@ -51,6 +51,7 @@ public slots:
   void render(double scale);
   void renderFinished(int code);
   void renderFailed(QProcess::ProcessError);
+  void updateCompileIndicator();
   void showCompilerSelection();
   void updateLog();
   void watchme(const QString& filename);
@@ -73,6 +74,7 @@ private:
 
   void clearLog();
   void appendLog(QString str);
+  void showCompilerErrorLine();
   
   void updateRootDirectory();
   
@@ -109,6 +111,9 @@ protected:
   QTimer *renderTimer;
 
   QTextEdit *log;
+  QLabel *compileIndicator;
+  QTimer *compileIndicatorTimer;
+  bool compileIndicatorOn;
 
   QUrl templateFile;
   QLineEdit *templateLabel;
@@ -132,6 +137,7 @@ protected:
   
   int currentPage;
   bool usersaved;
+  int templateInsertionLine;
 };
 
 #endif
